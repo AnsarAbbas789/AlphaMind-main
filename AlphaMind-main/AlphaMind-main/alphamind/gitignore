@@ -1,0 +1,35 @@
+# =====================================================================
+# AlphaMind — .gitignore
+# =====================================================================
+# نوٹ: config.js اس لسٹ میں شامل نہیں ہے، کیونکہ ابھی اس میں کوئی
+# حقیقی secret موجود نہیں (Gemini/Groq keys پہلے ہی Supabase Edge
+# Function میں منتقل ہو چکی ہیں، اور Supabase anon key عوامی استعمال
+# کے لیے محفوظ ہے)۔ یہ سٹیٹک فرنٹ اینڈ ہے، اس لیے config.js کو
+# ڈپلائے ہونے کے لیے ریپوزٹری میں موجود رہنا ضروری ہے۔
+# مستقبل میں اگر کوئی نئی حساس Key شامل کرنی ہو، تو اسے کبھی بھی
+# config.js میں براہ راست مت ڈالیں — ہمیشہ Supabase Edge Function
+# کے secrets میں رکھیں (جیسے ai-signal endpoint کے ساتھ کیا گیا)۔
+# =====================================================================
+
+# Environment / secret files (future-proofing)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+service-role-key.txt
+secrets/
+supabase/.temp/
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+*.log
+npm-debug.log*
+
+# اگر مستقبل میں کوئی build tool (Node/npm) شامل ہو
+node_modules/
+dist/
+build/

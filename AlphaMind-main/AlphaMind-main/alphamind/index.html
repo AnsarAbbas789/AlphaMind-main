@@ -1,0 +1,1544 @@
+﻿<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="AlphaMind — AI-Powered Trading Intelligence." />
+<meta name="theme-color" content="#1a2b4c" />
+<title>AlphaMind | AI-Powered Trading Intelligence</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- AlphaMind Auth — must load before the page's own script uses window.AlphaMindAuth -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-config.js"></script>
+<script src="auth.js"></script>
+<script src="onboarding.js"></script>
+
+<style>
+  /* ============================================================
+     ALPHAMIND — DESIGN TOKENS
+     ============================================================ */
+  :root {
+    --white:        #ffffff;
+    --offwhite:      #f8f9fb;
+    --gold:          #d4af37;
+    --gold-soft:     #e6c768;
+    --gold-deep:     #b8932a;
+    --blue-deep:     #1a2b4c;
+    --blue-deep-2:   #233a64;
+    --blue-sec:      #2563eb;
+    --text-dark:     #1a1a1a;
+    --text-dark-sec: #5b6472;
+    --text-light:    #e6e6e6;
+    --text-light-sec:#9aa4b5;
+    --border-light:  #e7e9ee;
+    --border-dark:   #262d3a;
+    --danger:        #d23b3b;
+
+    --bg:            var(--offwhite);
+    --card:          var(--white);
+    --text:          var(--text-dark);
+    --text-sec:      var(--text-dark-sec);
+    --border:        var(--border-light);
+    --input-bg:      #fbfbfd;
+    --nav-bg:        rgba(248,249,251,0.85);
+    --shadow-card:   0 2px 8px rgba(26,43,76,0.04), 0 16px 48px rgba(26,43,76,0.09);
+    --shadow-btn:    0 6px 18px rgba(26,43,76,0.18);
+    --shadow-gold:   0 6px 20px rgba(212,175,55,0.25);
+
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --font-urdu: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [data-theme="dark"] {
+    --bg:            #0d1117;
+    --card:          #161b22;
+    --text:          var(--text-light);
+    --text-sec:      var(--text-light-sec);
+    --border:        var(--border-dark);
+    --input-bg:      #0f141b;
+    --nav-bg:        rgba(13,17,23,0.82);
+    --shadow-card:   0 2px 8px rgba(0,0,0,0.3), 0 24px 64px rgba(0,0,0,0.55);
+    --shadow-btn:    0 6px 18px rgba(0,0,0,0.4);
+    --shadow-gold:   0 6px 22px rgba(212,175,55,0.18);
+  }
+
+  /* ============================================================
+     RESET
+     ============================================================ */
+  * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s var(--ease), color 0.3s var(--ease);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(212,175,55,0.3); }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ============================================================
+     SIGNATURE ELEMENT — the gold ticker-thread
+     A single continuous hairline that runs beneath the navbar
+     and resumes as the card's header rule. It carries a slowly
+     drifting price-style glint, tying the brand to markets
+     without any chart/candle cliché iconography.
+     ============================================================ */
+  .ticker-thread {
+    position: relative;
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent 0%, var(--border) 12%, var(--border) 88%, transparent 100%);
+    overflow: visible;
+  }
+
+  .ticker-thread::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 140px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+    animation: threadDrift 7s linear infinite;
+    opacity: 0.85;
+  }
+
+  @keyframes threadDrift {
+    0%   { left: -10%; }
+    100% { left: 110%; }
+  }
+
+  /* ============================================================
+     NAVBAR
+     ============================================================ */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--nav-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: background 0.3s var(--ease);
+  }
+
+  .navbar-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    gap: 16px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .brand-name .accent { color: var(--gold); }
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Language toggle */
+  .lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-sec);
+    transition: all 0.3s var(--ease);
+  }
+
+  .lang-toggle:hover {
+    border-color: var(--gold);
+    color: var(--text);
+    box-shadow: var(--shadow-gold);
+  }
+
+  /* Dark mode switch */
+  .theme-switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    background: var(--border);
+    border-radius: 99px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s var(--ease);
+    flex-shrink: 0;
+  }
+
+  [data-theme="dark"] .theme-switch { background: var(--blue-deep-2); }
+
+  .theme-switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s var(--ease), background 0.3s var(--ease);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+
+  [data-theme="dark"] .theme-switch-knob {
+    transform: translateX(24px);
+    background: var(--gold);
+  }
+
+  .theme-switch-knob svg { width: 13px; height: 13px; }
+
+  /* ============================================================
+     MAIN LAYOUT
+     ============================================================ */
+  .page-main {
+    min-height: calc(100vh - 65px - 90px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px 60px;
+  }
+
+  /* ============================================================
+     AUTH CARD
+     ============================================================ */
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+    animation: cardRise 0.6s var(--ease) both;
+  }
+
+  @keyframes cardRise {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    padding: 38px 36px 22px;
+    text-align: center;
+  }
+
+  .card-logo {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 18px;
+  }
+
+  .card-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .card-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-sec);
+    font-weight: 500;
+  }
+
+  /* Thread rule beneath header — continues the navbar's thread */
+  .card-header .ticker-thread { margin-top: 26px; }
+
+  /* ============================================================
+     TABS
+     ============================================================ */
+  .tabs {
+    display: flex;
+    margin: 22px 36px 0;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    position: relative;
+  }
+
+  .tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-sec);
+    cursor: pointer;
+    border-radius: 9px;
+    position: relative;
+    z-index: 1;
+    transition: color 0.3s var(--ease);
+  }
+
+  .tab-btn.active { color: var(--blue-deep); }
+  [data-theme="dark"] .tab-btn.active { color: var(--gold); }
+
+  .tab-indicator {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: var(--card);
+    border-radius: 9px;
+    box-shadow: 0 2px 6px rgba(26,43,76,0.1);
+    transition: transform 0.3s var(--ease);
+  }
+
+  [dir="rtl"] .tab-indicator { left: auto; right: 4px; }
+  [dir="rtl"] .tabs[data-active="login"] .tab-indicator { transform: translateX(calc(-100% - 0px)); }
+  .tabs[data-active="login"] .tab-indicator { transform: translateX(calc(100% + 0px)); }
+  [dir="rtl"] .tabs[data-active="signup"] .tab-indicator,
+  .tabs[data-active="signup"] .tab-indicator { transform: translateX(0); }
+
+  /* ============================================================
+     FORM PANELS
+     ============================================================ */
+  .panels { padding: 26px 36px 32px; position: relative; }
+
+  .panel {
+    display: none;
+    animation: panelFade 0.35s var(--ease) both;
+  }
+
+  .panel.active { display: block; }
+
+  @keyframes panelFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Google button */
+  .btn-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.3s var(--ease);
+  }
+
+  .btn-google:hover {
+    border-color: var(--text-sec);
+    box-shadow: 0 4px 14px rgba(26,43,76,0.08);
+    transform: translateY(-1px);
+  }
+
+  .btn-google:active { transform: translateY(0); }
+  .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+
+  .divider-text {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Form fields */
+  .field-group { margin-bottom: 16px; }
+
+  .field-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-sec);
+    margin-bottom: 7px;
+    letter-spacing: 0.01em;
+  }
+
+  .field-input-wrap { position: relative; }
+
+  .field-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 11px;
+    padding: 12px 14px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease), background 0.3s var(--ease);
+  }
+
+  .field-input::placeholder { color: var(--text-sec); opacity: 0.65; }
+
+  .field-input:hover { border-color: #c7cdd8; }
+  [data-theme="dark"] .field-input:hover { border-color: #3a4250; }
+
+  .field-input:focus {
+    border-color: var(--blue-sec);
+    box-shadow: 0 0 0 3.5px rgba(37,99,235,0.13);
+    background: var(--card);
+  }
+
+  .field-input.has-error {
+    border-color: var(--danger);
+  }
+  .field-input.has-error:focus {
+    box-shadow: 0 0 0 3.5px rgba(210,59,59,0.13);
+  }
+
+  .field-error {
+    display: none;
+    font-size: 0.74rem;
+    color: var(--danger);
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  .field-error.show { display: block; }
+
+  .pw-toggle-btn {
+    position: absolute;
+    inset-inline-end: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-sec);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.3s var(--ease);
+  }
+  .pw-toggle-btn:hover { color: var(--text); }
+  .pw-toggle-btn svg { width: 17px; height: 17px; }
+
+  /* Row: remember me + forgot */
+  .field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 0 22px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .remember-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--input-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s var(--ease);
+    flex-shrink: 0;
+  }
+
+  .remember-checkbox { display: none; }
+  .remember-checkbox:checked + .checkbox-custom {
+    background: var(--blue-deep);
+    border-color: var(--blue-deep);
+  }
+  [data-theme="dark"] .remember-checkbox:checked + .checkbox-custom {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .checkbox-custom svg {
+    width: 11px; height: 11px;
+    opacity: 0;
+    transition: opacity 0.2s var(--ease);
+    stroke: var(--white);
+  }
+  [data-theme="dark"] .checkbox-custom svg { stroke: var(--blue-deep); }
+  .remember-checkbox:checked + .checkbox-custom svg { opacity: 1; }
+
+  .remember-label { font-size: 0.82rem; color: var(--text-sec); font-weight: 500; }
+
+  .forgot-link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--blue-sec);
+    cursor: pointer;
+    transition: opacity 0.3s var(--ease);
+  }
+  [data-theme="dark"] .forgot-link { color: var(--gold); }
+  .forgot-link:hover { opacity: 0.75; text-decoration: underline; }
+
+  /* Primary buttons */
+  .btn-primary {
+    width: 100%;
+    background: var(--blue-deep);
+    border: none;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--white);
+    cursor: pointer;
+    box-shadow: var(--shadow-btn);
+    transition: all 0.3s var(--ease);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s var(--ease);
+  }
+
+  .btn-primary:hover {
+    background: var(--blue-deep-2);
+    transform: translateY(-1.5px);
+    box-shadow: 0 10px 24px rgba(26,43,76,0.26);
+  }
+  .btn-primary:hover::before { opacity: 1; }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-primary .btn-spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+  }
+  .btn-primary.loading .btn-text { display: none; }
+  .btn-primary.loading .btn-spinner { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Terms text */
+  .terms-text {
+    text-align: center;
+    font-size: 0.74rem;
+    color: var(--text-sec);
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+
+  .terms-text a {
+    color: var(--blue-sec);
+    font-weight: 600;
+  }
+  [data-theme="dark"] .terms-text a { color: var(--gold); }
+  .terms-text a:hover { text-decoration: underline; }
+
+  /* ============================================================
+     OTP SCREEN
+     ============================================================ */
+  .otp-screen { display: none; }
+  .otp-screen.active { display: block; animation: panelFade 0.35s var(--ease) both; }
+
+  .otp-icon-wrap {
+    width: 56px;
+    height: 56px;
+    background: rgba(212,175,55,0.12);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+  }
+  .otp-icon-wrap svg { width: 26px; height: 26px; stroke: var(--gold); }
+
+  .otp-heading {
+    text-align: center;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .otp-subtext {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-sec);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .otp-subtext .otp-email { font-weight: 700; color: var(--text); }
+
+  .otp-boxes {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .otp-box {
+    width: 46px;
+    height: 54px;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 11px;
+    color: var(--text);
+    outline: none;
+    transition: all 0.25s var(--ease);
+  }
+
+  .otp-box:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3.5px rgba(212,175,55,0.18);
+    background: var(--card);
+  }
+
+  .otp-box.filled { border-color: var(--blue-sec); }
+
+  .otp-resend {
+    text-align: center;
+    font-size: 0.83rem;
+    color: var(--text-sec);
+    margin-top: 18px;
+  }
+
+  .otp-resend-link {
+    color: var(--blue-sec);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  [data-theme="dark"] .otp-resend-link { color: var(--gold); }
+  .otp-resend-link:hover { text-decoration: underline; }
+  .otp-resend-link.disabled {
+    color: var(--text-sec);
+    cursor: not-allowed;
+    text-decoration: none;
+    opacity: 0.6;
+  }
+
+  .otp-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+    font-size: 0.8rem;
+    color: var(--text-sec);
+    cursor: pointer;
+    font-weight: 600;
+    transition: color 0.3s var(--ease);
+  }
+  .otp-back:hover { color: var(--text); }
+  .otp-back svg { width: 14px; height: 14px; }
+  [dir="rtl"] .otp-back svg { transform: scaleX(-1); }
+
+  /* ============================================================
+     ALERT BANNER (inline within card)
+     ============================================================ */
+  .alert-banner {
+    display: none;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+    animation: panelFade 0.25s var(--ease) both;
+  }
+  .alert-banner.show { display: flex; }
+  .alert-banner.success {
+    background: rgba(37,99,235,0.08);
+    border: 1px solid rgba(37,99,235,0.25);
+    color: var(--blue-sec);
+  }
+  .alert-banner.error {
+    background: rgba(210,59,59,0.08);
+    border: 1px solid rgba(210,59,59,0.25);
+    color: var(--danger);
+  }
+  .alert-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  .site-footer {
+    padding: 28px 20px 34px;
+    text-align: center;
+  }
+
+  .footer-copy {
+    font-size: 0.82rem;
+    color: var(--text-sec);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .footer-copy .gold-text { color: var(--gold); font-weight: 700; }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    font-size: 0.78rem;
+  }
+
+  .footer-links a { color: var(--text-sec); font-weight: 500; transition: color 0.3s var(--ease); }
+  .footer-links a:hover { color: var(--blue-sec); }
+  [data-theme="dark"] .footer-links a:hover { color: var(--gold); }
+
+  .footer-sep { color: var(--border); }
+
+  /* ============================================================
+     RTL / URDU
+     ============================================================ */
+  body.lang-ur { font-family: var(--font-urdu); }
+
+  body.lang-ur .brand-name,
+  body.lang-ur .card-title,
+  body.lang-ur .card-subtitle,
+  body.lang-ur .tab-btn,
+  body.lang-ur .field-label,
+  body.lang-ur .field-input,
+  body.lang-ur .remember-label,
+  body.lang-ur .forgot-link,
+  body.lang-ur .btn-primary,
+  body.lang-ur .btn-google,
+  body.lang-ur .terms-text,
+  body.lang-ur .otp-heading,
+  body.lang-ur .otp-subtext,
+  body.lang-ur .otp-resend,
+  body.lang-ur .footer-copy,
+  body.lang-ur .footer-links,
+  body.lang-ur .lang-toggle,
+  body.lang-ur .field-error,
+  body.lang-ur .alert-banner,
+  body.lang-ur .otp-back {
+    font-family: var(--font-urdu);
+    letter-spacing: 0;
+  }
+
+  body.lang-ur .divider-text { font-family: var(--font-urdu); letter-spacing: 0; font-size: 0.85rem; }
+
+  [dir="rtl"] .field-input { text-align: right; }
+  [dir="rtl"] .otp-boxes { direction: ltr; } /* OTP digits stay LTR for numeral order */
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 480px) {
+    .navbar-inner { padding: 14px 16px; }
+    .brand-name { font-size: 1rem; }
+    .lang-toggle { padding: 6px 10px; font-size: 0.72rem; }
+    .page-main { padding: 28px 12px 40px; }
+    .card-header { padding: 30px 22px 18px; }
+    .tabs { margin: 18px 22px 0; }
+    .panels { padding: 22px 22px 26px; }
+    .otp-boxes { gap: 7px; }
+    .otp-box { width: 40px; height: 50px; font-size: 1.15rem; }
+    .field-row { flex-direction: row; }
+  }
+
+  @media (max-width: 360px) {
+    .otp-box { width: 36px; height: 46px; font-size: 1.05rem; }
+    .otp-boxes { gap: 5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  @keyframes shakeCard {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  .shake { animation: shakeCard 0.4s ease; }
+</style>
+</head>
+<body data-theme="light">
+
+  <!-- Mandatory post-signup onboarding popups render into this container -->
+  <div id="onboardingContainer"></div>
+
+  <!-- ============================================================
+       NAVBAR
+  ============================================================ -->
+  <header class="navbar">
+    <div class="navbar-inner">
+
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="38" height="38" rx="10" fill="#1a2b4c"/>
+          <rect x="1" y="1" width="38" height="38" rx="10" fill="none" stroke="#d4af37" stroke-width="1" opacity="0.5"/>
+          <text x="20" y="27" font-family="Georgia, 'Times New Roman', serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#d4af37">α</text>
+        </svg>
+        <span class="brand-name">Alpha<span class="accent">Mind</span></span>
+      </div>
+
+      <div class="nav-controls">
+        <button class="lang-toggle" id="langToggle" onclick="toggleLanguage()" type="button">
+          <span id="langToggleText">اردو</span>
+        </button>
+
+        <button class="theme-switch" id="themeSwitch" onclick="toggleTheme()" type="button" aria-label="Toggle dark mode">
+          <span class="theme-switch-knob" id="themeKnob">
+            <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4.2"/>
+              <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>
+            </svg>
+            <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="#1a2b4c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+    </div>
+    <div class="ticker-thread"></div>
+  </header>
+
+  <!-- ============================================================
+       MAIN — AUTH CARD
+  ============================================================ -->
+  <main class="page-main">
+    <div class="auth-card" id="authCard">
+
+      <!-- ── Header ── -->
+      <div class="card-header">
+        <svg class="card-logo" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="50" height="50" rx="14" fill="#1a2b4c"/>
+          <rect x="1" y="1" width="50" height="50" rx="14" fill="none" stroke="#d4af37" stroke-width="1.2" opacity="0.55"/>
+          <text x="26" y="35" font-family="Georgia, 'Times New Roman', serif" font-size="26" font-weight="bold" text-anchor="middle" fill="#d4af37">α</text>
+        </svg>
+        <h1 class="card-title" data-en="Welcome to AlphaMind" data-ur="AlphaMind میں خوش آمدید">Welcome to AlphaMind</h1>
+        <p class="card-subtitle" data-en="AI-Powered Trading Intelligence" data-ur="اے آئی پاورڈ ٹریڈنگ انٹیلیجنس">AI-Powered Trading Intelligence</p>
+        <div class="ticker-thread"></div>
+      </div>
+
+      <!-- ── Tabs ── -->
+      <div class="tabs" id="tabs" data-active="signup">
+        <div class="tab-indicator"></div>
+        <button class="tab-btn active" id="tabSignup" onclick="switchTab('signup')" type="button" data-en="Sign Up" data-ur="اکاؤنٹ بنائیں">Sign Up</button>
+        <button class="tab-btn" id="tabLogin" onclick="switchTab('login')" type="button" data-en="Login" data-ur="لاگ ان">Login</button>
+      </div>
+
+      <!-- ── Panels ── -->
+      <div class="panels">
+
+        <div class="alert-banner" id="alertBanner"></div>
+
+        <!-- ===================== SIGN UP PANEL ===================== -->
+        <div class="panel active" id="panelSignup">
+
+          <button class="btn-google" type="button" onclick="handleGoogleAuth()">
+            <svg viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.47c-.28 1.5-1.13 2.77-2.41 3.62v3h3.9c2.28-2.1 3.53-5.19 3.53-8.65z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.9-3c-1.08.73-2.45 1.16-4.03 1.16-3.1 0-5.73-2.09-6.67-4.9H1.31v3.08C3.26 21.3 7.31 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.33 14.35a7.21 7.21 0 0 1 0-4.7V6.57H1.31a11.97 11.97 0 0 0 0 10.86l4.02-3.08z"/>
+              <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.45-3.45C17.94 1.18 15.24 0 12 0 7.31 0 3.26 2.7 1.31 6.57l4.02 3.08c.94-2.81 3.57-4.9 6.67-4.9z"/>
+            </svg>
+            <span data-en="Continue with Google" data-ur="گوگل کے ساتھ جاری رکھیں">Continue with Google</span>
+          </button>
+
+          <div class="divider">
+            <span class="divider-line"></span>
+            <span class="divider-text" data-en="or" data-ur="یا">or</span>
+            <span class="divider-line"></span>
+          </div>
+
+          <form id="signupForm" novalidate autocomplete="off">
+
+            <div class="field-group">
+              <label class="field-label" for="suName" data-en="Full Name" data-ur="پورا نام">Full Name</label>
+              <div class="field-input-wrap">
+                <input type="text" id="suName" class="field-input" placeholder="Ansar Abbas" data-en-placeholder="Ansar Abbas" data-ur-placeholder="آپ کا نام" autocomplete="name" />
+              </div>
+              <div class="field-error" id="errSuName" data-en="Please enter your full name." data-ur="براہ کرم اپنا پورا نام درج کریں۔"></div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="suEmail" data-en="Email" data-ur="ای میل">Email</label>
+              <div class="field-input-wrap">
+                <input type="email" id="suEmail" class="field-input" placeholder="you@example.com" inputmode="email" autocomplete="email" />
+              </div>
+              <div class="field-error" id="errSuEmail" data-en="Please enter a valid email address." data-ur="براہ کرم درست ای میل پتہ درج کریں۔"></div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="suPassword" data-en="Password" data-ur="پاس ورڈ">Password</label>
+              <div class="field-input-wrap">
+                <input type="password" id="suPassword" class="field-input" placeholder="••••••••" autocomplete="new-password" />
+                <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('suPassword', this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div class="field-error" id="errSuPassword" data-en="Password must be at least 8 characters." data-ur="پاس ورڈ کم از کم 8 حروف کا ہونا چاہیے۔"></div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="suConfirm" data-en="Confirm Password" data-ur="پاس ورڈ کی تصدیق کریں">Confirm Password</label>
+              <div class="field-input-wrap">
+                <input type="password" id="suConfirm" class="field-input" placeholder="••••••••" autocomplete="new-password" />
+                <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('suConfirm', this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div class="field-error" id="errSuConfirm" data-en="Passwords do not match." data-ur="پاس ورڈز مماثل نہیں ہیں۔"></div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="btnCreateAccount">
+              <span class="btn-text" data-en="Create Account" data-ur="اکاؤنٹ بنائیں">Create Account</span>
+              <span class="btn-spinner"></span>
+            </button>
+
+            <p class="terms-text">
+              <span data-en="By signing up you agree to" data-ur="سائن اپ کر کے آپ اتفاق کرتے ہیں">By signing up you agree to</span>
+              <a href="#" onclick="return false;" data-en="Terms" data-ur="شرائط">Terms</a>
+              <span data-en="&amp;" data-ur="اور">&amp;</span>
+              <a href="#" onclick="return false;" data-en="Privacy Policy" data-ur="پرائیویسی پالیسی">Privacy Policy</a>
+            </p>
+
+          </form>
+        </div>
+
+        <!-- ===================== OTP VERIFICATION SCREEN ===================== -->
+        <div class="otp-screen" id="otpScreen">
+
+          <div class="otp-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+          </div>
+
+          <h2 class="otp-heading" data-en="Verify your email" data-ur="اپنی ای میل کی تصدیق کریں">Verify your email</h2>
+          <p class="otp-subtext">
+            <span data-en="Enter the 6-digit code sent to" data-ur="6 ہندسوں کا کوڈ درج کریں جو بھیجا گیا ہے">Enter the 6-digit code sent to</span>
+            <br/>
+            <span class="otp-email" id="otpEmailDisplay">you@example.com</span>
+          </p>
+
+          <div class="otp-boxes" id="otpBoxes">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="0" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="1" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="2" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="3" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="4" />
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="5" />
+          </div>
+
+          <button type="button" class="btn-primary" id="btnVerifyOtp" onclick="handleVerifyOtp()">
+            <span class="btn-text" data-en="Verify Code" data-ur="کوڈ کی تصدیق کریں">Verify Code</span>
+            <span class="btn-spinner"></span>
+          </button>
+
+          <p class="otp-resend">
+            <span data-en="Didn't get the code?" data-ur="کوڈ موصول نہیں ہوا؟">Didn't get the code?</span>
+            <span class="otp-resend-link" id="resendLink" onclick="handleResendOtp()" data-en="Resend Code" data-ur="کوڈ دوبارہ بھیجیں">Resend Code</span>
+          </p>
+
+          <div class="otp-back" onclick="backToSignup()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span data-en="Back to Sign Up" data-ur="سائن اپ پر واپس جائیں">Back to Sign Up</span>
+          </div>
+
+        </div>
+
+        <!-- ===================== LOGIN PANEL ===================== -->
+        <div class="panel" id="panelLogin">
+
+          <button class="btn-google" type="button" onclick="handleGoogleAuth()">
+            <svg viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.47c-.28 1.5-1.13 2.77-2.41 3.62v3h3.9c2.28-2.1 3.53-5.19 3.53-8.65z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.9-3c-1.08.73-2.45 1.16-4.03 1.16-3.1 0-5.73-2.09-6.67-4.9H1.31v3.08C3.26 21.3 7.31 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.33 14.35a7.21 7.21 0 0 1 0-4.7V6.57H1.31a11.97 11.97 0 0 0 0 10.86l4.02-3.08z"/>
+              <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.45-3.45C17.94 1.18 15.24 0 12 0 7.31 0 3.26 2.7 1.31 6.57l4.02 3.08c.94-2.81 3.57-4.9 6.67-4.9z"/>
+            </svg>
+            <span data-en="Continue with Google" data-ur="گوگل کے ساتھ جاری رکھیں">Continue with Google</span>
+          </button>
+
+          <div class="divider">
+            <span class="divider-line"></span>
+            <span class="divider-text" data-en="or" data-ur="یا">or</span>
+            <span class="divider-line"></span>
+          </div>
+
+          <form id="loginForm" novalidate autocomplete="off">
+
+            <div class="field-group">
+              <label class="field-label" for="liEmail" data-en="Email" data-ur="ای میل">Email</label>
+              <div class="field-input-wrap">
+                <input type="email" id="liEmail" class="field-input" placeholder="you@example.com" inputmode="email" autocomplete="email" />
+              </div>
+              <div class="field-error" id="errLiEmail" data-en="Please enter a valid email address." data-ur="براہ کرم درست ای میل پتہ درج کریں۔"></div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="liPassword" data-en="Password" data-ur="پاس ورڈ">Password</label>
+              <div class="field-input-wrap">
+                <input type="password" id="liPassword" class="field-input" placeholder="••••••••" autocomplete="current-password" />
+                <button type="button" class="pw-toggle-btn" onclick="togglePwVisibility('liPassword', this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div class="field-error" id="errLiPassword" data-en="Please enter your password." data-ur="براہ کرم اپنا پاس ورڈ درج کریں۔"></div>
+            </div>
+
+            <div class="field-row">
+              <label class="remember-wrap">
+                <input type="checkbox" class="remember-checkbox" id="rememberMe" />
+                <span class="checkbox-custom">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <span class="remember-label" data-en="Remember me" data-ur="مجھے یاد رکھیں">Remember me</span>
+              </label>
+              <span class="forgot-link" onclick="handleForgotPassword()" data-en="Forgot Password?" data-ur="پاس ورڈ بھول گئے؟">Forgot Password?</span>
+            </div>
+
+            <button type="submit" class="btn-primary" id="btnLogin">
+              <span class="btn-text" data-en="Login" data-ur="لاگ ان">Login</span>
+              <span class="btn-spinner"></span>
+            </button>
+
+          </form>
+        </div>
+
+      </div>
+      <!-- /panels -->
+
+    </div>
+    <!-- /auth-card -->
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+  ============================================================ -->
+  <footer class="site-footer">
+    <p class="footer-copy">
+      <span data-en="© 2025 AlphaMind" data-ur="© 2025 AlphaMind">© 2025 AlphaMind</span>
+      <span> | </span>
+      <span data-en="Built by" data-ur="تیار کردہ">Built by</span>
+      <span class="gold-text">Ansar Abbas</span>
+    </p>
+    <div class="footer-links">
+      <a href="#" onclick="return false;" data-en="Terms of Service" data-ur="شرائط خدمت">Terms of Service</a>
+      <span class="footer-sep">·</span>
+      <a href="#" onclick="return false;" data-en="Privacy Policy" data-ur="پرائیویسی پالیسی">Privacy Policy</a>
+    </div>
+  </footer>
+
+  <script>
+  "use strict";
+
+  /* ================================================================
+     STATE
+  ================================================================ */
+  var currentLang = "en";
+  var currentTheme = "light";
+  var activeTab = "signup";
+  var resendCooldown = 0;
+  var resendTimer = null;
+
+  /* ================================================================
+     THEME (DARK / LIGHT MODE)
+  ================================================================ */
+  function applyTheme(theme) {
+    currentTheme = theme;
+    document.body.setAttribute("data-theme", theme);
+    document.getElementById("themeIconSun").style.display = theme === "dark" ? "none" : "block";
+    document.getElementById("themeIconMoon").style.display = theme === "dark" ? "block" : "none";
+    try { localStorage.setItem("alphamind_theme", theme); } catch (e) {}
+  }
+
+  function toggleTheme() {
+    applyTheme(currentTheme === "light" ? "dark" : "light");
+  }
+
+  /* ================================================================
+     LANGUAGE (EN / UR)
+  ================================================================ */
+  function applyLanguage(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ur" ? "rtl" : "ltr";
+    document.body.classList.toggle("lang-ur", lang === "ur");
+
+    document.getElementById("langToggleText").textContent = lang === "ur" ? "English" : "اردو";
+
+    document.querySelectorAll("[data-en]").forEach(function (el) {
+      var val = el.getAttribute("data-" + lang);
+      if (val !== null) el.textContent = val;
+    });
+
+    document.querySelectorAll("[data-en-placeholder]").forEach(function (el) {
+      var val = el.getAttribute("data-" + lang + "-placeholder");
+      if (val !== null) el.placeholder = val;
+    });
+
+    try { localStorage.setItem("alphamind_lang", lang); } catch (e) {}
+  }
+
+  function toggleLanguage() {
+    applyLanguage(currentLang === "en" ? "ur" : "en");
+  }
+
+  /* ================================================================
+     TABS
+  ================================================================ */
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById("tabs").setAttribute("data-active", tab);
+
+    document.getElementById("tabSignup").classList.toggle("active", tab === "signup");
+    document.getElementById("tabLogin").classList.toggle("active", tab === "login");
+
+    document.getElementById("panelSignup").classList.toggle("active", tab === "signup");
+    document.getElementById("panelLogin").classList.toggle("active", tab === "login");
+
+    // Hide OTP screen and restore signup panel visibility behavior if switching tabs
+    document.getElementById("otpScreen").classList.remove("active");
+    if (tab === "signup") {
+      document.getElementById("panelSignup").classList.add("active");
+    }
+
+    hideAlert();
+  }
+
+  /* ================================================================
+     ALERT BANNER
+  ================================================================ */
+  function showAlert(message, type) {
+    var el = document.getElementById("alertBanner");
+    var icon = type === "success"
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+    el.innerHTML = icon + "<span>" + message + "</span>";
+    el.className = "alert-banner show " + (type || "error");
+  }
+
+  function hideAlert() {
+    var el = document.getElementById("alertBanner");
+    el.className = "alert-banner";
+    el.innerHTML = "";
+  }
+
+  /* ================================================================
+     PASSWORD VISIBILITY TOGGLE
+  ================================================================ */
+  function togglePwVisibility(inputId, btn) {
+    var input = document.getElementById(inputId);
+    var isPw = input.type === "password";
+    input.type = isPw ? "text" : "password";
+    btn.innerHTML = isPw
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+
+  /* ================================================================
+     FIELD VALIDATION HELPERS
+  ================================================================ */
+  function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  function setFieldError(inputId, errorId, show) {
+    var input = document.getElementById(inputId);
+    var err = document.getElementById(errorId);
+    input.classList.toggle("has-error", show);
+    err.classList.toggle("show", show);
+  }
+
+  function clearAllErrors(formId) {
+    document.querySelectorAll("#" + formId + " .field-input").forEach(function (el) {
+      el.classList.remove("has-error");
+    });
+    document.querySelectorAll("#" + formId + " .field-error").forEach(function (el) {
+      el.classList.remove("show");
+    });
+  }
+
+  function shakeCard() {
+    var card = document.getElementById("authCard");
+    card.classList.remove("shake");
+    void card.offsetWidth;
+    card.classList.add("shake");
+  }
+
+  function setBtnLoading(btn, on) {
+    btn.disabled = on;
+    btn.classList.toggle("loading", on);
+  }
+
+  /* ================================================================
+     SIGN UP FLOW
+  ================================================================ */
+  document.getElementById("signupForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    hideAlert();
+    clearAllErrors("signupForm");
+
+    var name = document.getElementById("suName").value.trim();
+    var email = document.getElementById("suEmail").value.trim();
+    var pw = document.getElementById("suPassword").value;
+    var confirm = document.getElementById("suConfirm").value;
+
+    var valid = true;
+
+    if (!name) { setFieldError("suName", "errSuName", true); valid = false; }
+    if (!email || !isValidEmail(email)) { setFieldError("suEmail", "errSuEmail", true); valid = false; }
+    if (!pw || pw.length < 8) { setFieldError("suPassword", "errSuPassword", true); valid = false; }
+    if (!confirm || confirm !== pw) { setFieldError("suConfirm", "errSuConfirm", true); valid = false; }
+
+    if (!valid) { shakeCard(); return; }
+
+    var btn = document.getElementById("btnCreateAccount");
+    setBtnLoading(btn, true);
+
+    window.AlphaMindAuth.signUp(name, email, pw)
+      .then(function () {
+        setBtnLoading(btn, false);
+        // Move to OTP screen
+        document.getElementById("otpEmailDisplay").textContent = email;
+        document.getElementById("panelSignup").classList.remove("active");
+        document.getElementById("otpScreen").classList.add("active");
+        startResendCooldown();
+        focusOtpBox(0);
+      })
+      .catch(function (err) {
+        setBtnLoading(btn, false);
+        shakeCard();
+        showAlert(
+          (err && err.message) ? err.message : (currentLang === "ur" ? "اکاؤنٹ بنانے میں خرابی ہوئی۔" : "Failed to create account."),
+          "error"
+        );
+      });
+  });
+
+  function backToSignup() {
+    document.getElementById("otpScreen").classList.remove("active");
+    document.getElementById("panelSignup").classList.add("active");
+    clearOtpBoxes();
+    hideAlert();
+  }
+
+  /* ================================================================
+     OTP BOX LOGIC
+  ================================================================ */
+  function getOtpBoxes() {
+    return Array.prototype.slice.call(document.querySelectorAll(".otp-box"));
+  }
+
+  function focusOtpBox(idx) {
+    var boxes = getOtpBoxes();
+    if (boxes[idx]) boxes[idx].focus();
+  }
+
+  function clearOtpBoxes() {
+    getOtpBoxes().forEach(function (box) {
+      box.value = "";
+      box.classList.remove("filled");
+    });
+  }
+
+  (function initOtpBoxes() {
+    var boxes = getOtpBoxes();
+    boxes.forEach(function (box, idx) {
+      box.addEventListener("input", function () {
+        this.value = this.value.replace(/[^0-9]/g, "").slice(0, 1);
+        this.classList.toggle("filled", this.value.length === 1);
+        if (this.value.length === 1 && idx < boxes.length - 1) {
+          boxes[idx + 1].focus();
+        }
+      });
+
+      box.addEventListener("keydown", function (e) {
+        if (e.key === "Backspace" && !this.value && idx > 0) {
+          boxes[idx - 1].focus();
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleVerifyOtp();
+        }
+        if (e.key === "ArrowLeft" && idx > 0) { boxes[idx - 1].focus(); }
+        if (e.key === "ArrowRight" && idx < boxes.length - 1) { boxes[idx + 1].focus(); }
+      });
+
+      box.addEventListener("paste", function (e) {
+        e.preventDefault();
+        var pasted = (e.clipboardData || window.clipboardData).getData("text").replace(/[^0-9]/g, "");
+        if (!pasted) return;
+        for (var i = 0; i < boxes.length; i++) {
+          boxes[i].value = pasted[i] || "";
+          boxes[i].classList.toggle("filled", !!pasted[i]);
+        }
+        var nextIdx = Math.min(pasted.length, boxes.length - 1);
+        boxes[nextIdx].focus();
+      });
+    });
+  })();
+
+  function handleVerifyOtp() {
+    var boxes = getOtpBoxes();
+    var code = boxes.map(function (b) { return b.value; }).join("");
+
+    if (code.length < 6) {
+      shakeCard();
+      showAlert(
+        currentLang === "ur" ? "براہ کرم مکمل 6 ہندسوں کا کوڈ درج کریں۔" : "Please enter the complete 6-digit code.",
+        "error"
+      );
+      return;
+    }
+
+    var email = document.getElementById("otpEmailDisplay").textContent;
+    var btn = document.getElementById("btnVerifyOtp");
+    setBtnLoading(btn, true);
+
+    window.AlphaMindAuth.verifySignupOtp(email, code)
+      .then(function () {
+        setBtnLoading(btn, false);
+        showAlert(
+          currentLang === "ur" ? "✓ ای میل کی تصدیق ہو گئی! آپ کا اکاؤنٹ تیار ہے۔" : "✓ Email verified! Your account is ready.",
+          "success"
+        );
+        if (window.AlphaMind && window.AlphaMind.startOnboarding) {
+          window.AlphaMind.startOnboarding();
+        }
+      })
+      .catch(function (err) {
+        setBtnLoading(btn, false);
+        shakeCard();
+        showAlert(
+          (err && err.message) ? err.message : (currentLang === "ur" ? "کوڈ درست نہیں ہے۔" : "Invalid code."),
+          "error"
+        );
+      });
+  }
+
+  function startResendCooldown() {
+    resendCooldown = 30;
+    var link = document.getElementById("resendLink");
+    link.classList.add("disabled");
+
+    function tick() {
+      if (resendCooldown <= 0) {
+        clearInterval(resendTimer);
+        link.classList.remove("disabled");
+        link.textContent = currentLang === "ur" ? "کوڈ دوبارہ بھیجیں" : "Resend Code";
+        return;
+      }
+      link.textContent = (currentLang === "ur" ? "دوبارہ بھیجیں (" : "Resend in ") + resendCooldown + (currentLang === "ur" ? ")" : "s");
+      resendCooldown -= 1;
+    }
+
+    if (resendTimer) clearInterval(resendTimer);
+    tick();
+    resendTimer = setInterval(tick, 1000);
+  }
+
+  function handleResendOtp() {
+    if (resendCooldown > 0) return;
+    var email = document.getElementById("otpEmailDisplay").textContent;
+
+    window.AlphaMindAuth.resendSignupOtp(email)
+      .then(function () {
+        clearOtpBoxes();
+        focusOtpBox(0);
+        showAlert(currentLang === "ur" ? "ایک نیا کوڈ بھیج دیا گیا ہے۔" : "A new code has been sent.", "success");
+        startResendCooldown();
+      })
+      .catch(function (err) {
+        showAlert(
+          (err && err.message) ? err.message : (currentLang === "ur" ? "کوڈ دوبارہ بھیجنے میں خرابی۔" : "Failed to resend code."),
+          "error"
+        );
+      });
+  }
+
+  /* ================================================================
+     LOGIN FLOW
+  ================================================================ */
+  document.getElementById("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    hideAlert();
+    clearAllErrors("loginForm");
+
+    var email = document.getElementById("liEmail").value.trim();
+    var pw = document.getElementById("liPassword").value;
+
+    var valid = true;
+    if (!email || !isValidEmail(email)) { setFieldError("liEmail", "errLiEmail", true); valid = false; }
+    if (!pw) { setFieldError("liPassword", "errLiPassword", true); valid = false; }
+
+    if (!valid) { shakeCard(); return; }
+
+    var btn = document.getElementById("btnLogin");
+    setBtnLoading(btn, true);
+
+    window.AlphaMindAuth.signIn(email, pw)
+      .then(function () {
+        setBtnLoading(btn, false);
+        showAlert(
+          currentLang === "ur" ? "✓ لاگ ان کامیاب! خوش آمدید۔" : "✓ Login successful! Welcome back.",
+          "success"
+        );
+        if (window.AlphaMind && window.AlphaMind.startOnboarding) {
+          window.AlphaMind.startOnboarding();
+        }
+      })
+      .catch(function (err) {
+        setBtnLoading(btn, false);
+        shakeCard();
+        showAlert(
+          (err && err.message) ? err.message : (currentLang === "ur" ? "لاگ ان ناکام۔ ای میل یا پاس ورڈ چیک کریں۔" : "Login failed. Check your email or password."),
+          "error"
+        );
+      });
+  });
+
+  function handleForgotPassword() {
+    var email = document.getElementById("liEmail").value.trim();
+
+    if (!email || !isValidEmail(email)) {
+      setFieldError("liEmail", "errLiEmail", true);
+      shakeCard();
+      showAlert(
+        currentLang === "ur" ? "پاس ورڈ ری سیٹ کے لیے پہلے درست ای میل درج کریں۔" : "Please enter a valid email first to reset your password.",
+        "error"
+      );
+      return;
+    }
+
+    window.AlphaMindAuth.sendPasswordReset(email)
+      .then(function () {
+        showAlert(
+          currentLang === "ur"
+            ? "پاس ورڈ ری سیٹ کا لنک آپ کی ای میل پر بھیج دیا جائے گا۔"
+            : "A password reset link will be sent to your email.",
+          "success"
+        );
+      })
+      .catch(function (err) {
+        showAlert(
+          (err && err.message) ? err.message : (currentLang === "ur" ? "پاس ورڈ ری سیٹ بھیجنے میں خرابی۔" : "Failed to send password reset link."),
+          "error"
+        );
+      });
+  }
+
+  function handleGoogleAuth() {
+    showAlert(
+      currentLang === "ur" ? "گوگل کے ساتھ تصدیق جاری ہے..." : "Continuing with Google...",
+      "success"
+    );
+    window.AlphaMindAuth.signInWithGoogle().catch(function (err) {
+      showAlert(
+        (err && err.message) ? err.message : (currentLang === "ur" ? "گوگل کے ساتھ لاگ ان ناکام۔" : "Google sign-in failed."),
+        "error"
+      );
+    });
+  }
+
+  /* ================================================================
+     INIT — restore saved preferences
+  ================================================================ */
+  (function init() {
+    var savedTheme = "light";
+    var savedLang = "en";
+    try {
+      savedTheme = localStorage.getItem("alphamind_theme") || "light";
+      savedLang = localStorage.getItem("alphamind_lang") || "en";
+    } catch (e) {}
+
+    applyTheme(savedTheme);
+    applyLanguage(savedLang);
+  })();
+  </script>
+
+</body>
+</html>
